@@ -1,4 +1,4 @@
-package main;
+package interfaces;
 
 /**
  * A contact is a person we are making business with or may do in the future.
@@ -34,8 +34,7 @@ public interface Contact {
   /**
    * Add notes about the contact.
    * 
-   * @param note
-   *          the notes to be added
+   * @param note the notes to be added
    */
   void addNotes(String note);
 }

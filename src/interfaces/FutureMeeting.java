@@ -1,4 +1,4 @@
-package main;
+package interfaces;
 
 /**
  * A meeting to be held in the future
