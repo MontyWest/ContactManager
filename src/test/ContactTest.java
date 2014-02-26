@@ -76,7 +76,6 @@ public class ContactTest {
   public void testContactUniqueIds() {
     Contact jim = new ContactImpl("jim");
     Contact mike = new ContactImpl("mike");
-    System.out.print(jim.getId());
     
     assertThat(jim.getId(), is(not(equalTo(mike.getId()))));
   }
