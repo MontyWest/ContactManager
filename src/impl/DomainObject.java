@@ -14,10 +14,6 @@ public abstract class DomainObject implements Serializable{
     this.id = idBank.incrementAndGet();
   }
   
-  public DomainObject(DomainObject obj) {
-    this.id = obj.getId();
-  }
-  
   public int getId() {
     return id;
   }
@@ -26,7 +22,6 @@ public abstract class DomainObject implements Serializable{
     in.defaultReadObject();
     if (this.id > idBank.intValue()) {
       idBank.set(this.id);
-      //TODO check compareAndSet()
     }
   }
 }
