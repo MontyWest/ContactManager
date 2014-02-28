@@ -1,6 +1,6 @@
 package impl;
 
-import java.io.IOException;
+import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -18,10 +18,22 @@ public abstract class DomainObject implements Serializable{
     return id;
   }
   
-  private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
-    in.defaultReadObject();
-    if (this.id > idBank.intValue()) {
-      idBank.set(this.id);
+  /***
+   * readResolve to reset the idBank after the object has been
+   * deserialized. Protected ensures that this behaviour is
+   * inherited by Contact and Meeting.
+   * Statement is synchronized to idBank to ensure correct
+   * behaviour if read process is concurrent.
+   * 
+   * @return this
+   * @throws ObjectStreamException
+   */
+  protected Object readResolve() throws ObjectStreamException{
+    synchronized(idBank) {
+      if (this.id > idBank.intValue()) {
+        idBank.set(this.id);
+      }
     }
+    return this;
   }
 }
