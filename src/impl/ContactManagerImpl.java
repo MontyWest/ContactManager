@@ -334,7 +334,8 @@ public class ContactManagerImpl implements ContactManager, Serializable {
   
   /***
    * Generic to allow Meeting, FutureMeeting and PastMeeting.
-   * Sorts meetings by date,  past to future.
+   * Sorts meetings by date,  farthest in past to farthest 
+   * in future.
    * 
    * @param meetingList
    */

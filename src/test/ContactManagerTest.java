@@ -334,9 +334,9 @@ public class ContactManagerTest {
     contactManager.addNewPastMeeting(mikeSet, twoYearAgoDate,"text");
     List<PastMeeting> returnedMeetings = contactManager.getPastMeetingList(mike);
     
-    assertEquals(oneYearAgoDate, returnedMeetings.get(0).getDate());
+    assertEquals(threeYearAgoDate, returnedMeetings.get(0).getDate());
     assertEquals(twoYearAgoDate, returnedMeetings.get(1).getDate());
-    assertEquals(threeYearAgoDate, returnedMeetings.get(2).getDate());    
+    assertEquals(oneYearAgoDate, returnedMeetings.get(2).getDate());    
   }
   
   // ### General Meeting Return
@@ -448,7 +448,7 @@ public class ContactManagerTest {
     int pastMeetingId = pastMeetingList.get(0).getId();
     
     try {
-      contactManager.getPastMeeting(pastMeetingId);
+      contactManager.getFutureMeeting(pastMeetingId);
       fail();
     } catch (IllegalArgumentException e) {
       
