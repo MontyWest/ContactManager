@@ -45,6 +45,22 @@ public class MeetingTest {
   }
   
   @Test
+  public void testImmutableDate() {
+    Meeting meeting = new MeetingImpl(nowDate, contacts);
+    Calendar date = meeting.getDate();
+    date.add(Calendar.YEAR, 1);
+    assertFalse(date.get(Calendar.YEAR) == meeting.getDate().get(Calendar.YEAR));
+  }
+  
+  @Test
+  public void testContactsImmutableFromOutsideObject() {
+    Meeting meeting = new MeetingImpl(nowDate, contacts);
+    Set<Contact> contacts = meeting.getContacts();
+    contacts.add(new MockContactImpl());
+    assertFalse(contacts.size() == meeting.getContacts().size());
+  }
+  
+  @Test
   public void testUniqueIds() {
     Meeting meetingOne = new MeetingImpl(nowDate, contacts);
     Meeting meetingTwo = new MeetingImpl(nowDate, contacts);

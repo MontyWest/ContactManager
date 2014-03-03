@@ -6,6 +6,10 @@ import interfaces.FutureMeeting;
 import interfaces.Meeting;
 import interfaces.PastMeeting;
 
+import java.beans.XMLEncoder;
+import java.io.BufferedOutputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.Serializable;
 import java.util.Calendar;
 import java.util.Collections;
@@ -18,6 +22,8 @@ import java.util.Set;
 
 public class ContactManagerImpl implements ContactManager, Serializable {
   
+  private static final long serialVersionUID = 4L;
+  
   private List<PastMeeting> pastMeetings = new LinkedList<PastMeeting>();
   private List<FutureMeeting> futureMeetings = new LinkedList<FutureMeeting>();
   private Set<Contact> contacts = new HashSet<Contact>();
@@ -28,7 +34,7 @@ public class ContactManagerImpl implements ContactManager, Serializable {
       throw new IllegalArgumentException();
     }
     FutureMeeting newFutureMeeting = new MeetingImpl(date, contacts);
-    futureMeetings.add(newFutureMeeting);
+    this.futureMeetings.add(newFutureMeeting);
     return newFutureMeeting.getId();
   }
   
@@ -38,7 +44,7 @@ public class ContactManagerImpl implements ContactManager, Serializable {
     
     if (meeting == null) {
       return null;
-    } else if (futureMeetings.contains((FutureMeeting) meeting)) {
+    } else if (isFutureMeeting(meeting)) {
       throw new IllegalArgumentException();
     } else {
       return (PastMeeting) meeting;
@@ -51,7 +57,7 @@ public class ContactManagerImpl implements ContactManager, Serializable {
     
     if (meeting == null) {
       return null;
-    } else if (pastMeetings.contains((PastMeeting) meeting)) {
+    } else if (isPastMeeting(meeting)) {
       throw new IllegalArgumentException();
     } else {
       return (FutureMeeting) meeting;
@@ -157,7 +163,101 @@ public class ContactManagerImpl implements ContactManager, Serializable {
     
     return returnList;
   }
+  
+  @Override
+  public void addNewPastMeeting(Set<Contact> contacts, Calendar date, String text) {
+    if (contacts == null || date == null || text == null) {
+      throw new NullPointerException();
+    }
+    if (contacts.size() == 0 || !areValidContacts(contacts)) {
+      throw new IllegalArgumentException();
+    }
+    PastMeeting newPastMeeting = new MeetingImpl(date, contacts);
+    newPastMeeting.addNotes(text);
+    this.pastMeetings.add(newPastMeeting);
+  }
 
+  @Override
+  public void addMeetingNotes(int id, String text) {
+    if(text == null) {
+      throw new NullPointerException();
+    }
+    
+    Meeting meeting = getMeeting(id);
+    if(meeting == null) {
+      throw new IllegalArgumentException();
+    } else if (isFutureMeeting(meeting)) {
+      if(isInFuture(meeting.getDate())) {
+        throw new IllegalStateException();
+      }
+      futureMeetings.remove((FutureMeeting) meeting);
+      pastMeetings.add((PastMeeting) meeting);
+    }
+    PastMeeting pastMeeting = (PastMeeting) meeting;
+    pastMeeting.addNotes(text);
+  }
+  
+  @Override
+  public void addNewContact(String name, String notes) {
+    if (notes == null || name == null) {
+      throw new NullPointerException();
+    }
+    
+    Contact newContact = new ContactImpl(name, notes);
+    contacts.add(newContact);
+  }
+  
+  @Override
+  public Set<Contact> getContacts(int... ids) {
+   
+    Set<Contact> returnSet = new HashSet<Contact>();
+    for (int id : ids) {
+      Iterator<Contact> it = contacts.iterator();
+      Contact candidate;
+      do {
+         if(!it.hasNext()) {
+           throw new IllegalArgumentException();
+         }
+      } while((candidate = it.next()).getId() != id);
+      returnSet.add(candidate);
+    }
+    return returnSet;
+  }
+  
+  @Override
+  public Set<Contact> getContacts(String name) {
+    if(name == null) {
+      throw new NullPointerException();
+    }
+    
+    Set<Contact> returnSet = new HashSet<Contact>();
+    Iterator<Contact> it = contacts.iterator();
+    while(it.hasNext()) {
+      Contact candidate = it.next();
+      if (candidate.getName().contains(name)) {
+        returnSet.add(candidate);
+      }
+    }
+    return returnSet;
+  }
+  
+  @Override
+  public void flush() {
+    final String FILENAME = "contacts.txt"; //in object?
+    
+    XMLEncoder encode = null;
+    try {
+        encode = new XMLEncoder(
+                new BufferedOutputStream(
+                        new FileOutputStream(FILENAME)));
+    } catch (FileNotFoundException e) {
+        System.err.println("encoding... " + e);
+    }
+
+    encode.writeObject(this);
+    encode.close();
+
+  }
   
   /***
    * If date is now then returns false.
@@ -212,7 +312,32 @@ public class ContactManagerImpl implements ContactManager, Serializable {
     return this.contacts.contains(contact);
   }
   
+  /***
+   * Regardless of date.
+   * 
+   * @param meeting
+   * @return true is meeting is in futureMeetings list
+   */
+  private boolean isFutureMeeting(Meeting meeting) {
+    return futureMeetings.contains((FutureMeeting) meeting);
+  }
   
+  /***
+   * Regardless of date.
+   * 
+   * @param meeting
+   * @return true is meeting is in pastMeetings list
+   */
+  private boolean isPastMeeting(Meeting meeting) {
+    return pastMeetings.contains((PastMeeting) meeting);
+  }
+  
+  /***
+   * Generic to allow Meeting, FutureMeeting and PastMeeting.
+   * Sorts meetings by date,  past to future.
+   * 
+   * @param meetingList
+   */
   private <T extends Meeting> void sortMeetingsByDate(List<T> meetingList) {
     Collections.sort(meetingList, new Comparator<T>() {
       

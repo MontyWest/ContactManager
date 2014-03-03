@@ -6,6 +6,7 @@ import interfaces.Meeting;
 import interfaces.PastMeeting;
 
 import java.util.Calendar;
+import java.util.HashSet;
 import java.util.Set;
 
 public class MeetingImpl extends DomainObject implements Meeting, PastMeeting, FutureMeeting {
@@ -22,12 +23,12 @@ public class MeetingImpl extends DomainObject implements Meeting, PastMeeting, F
   
   @Override
   public Calendar getDate() {
-    return date;
+    return (Calendar) date.clone();
   }
   
   @Override
   public Set<Contact> getContacts() {
-    return contacts;
+    return new HashSet<Contact>(contacts);
   }
   
   @Override
