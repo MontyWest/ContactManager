@@ -17,6 +17,7 @@ public class PastMeetingTest {
   
   Calendar pastDate;
   Set<Contact> contacts;
+  PastMeeting pastMeeting;
 
   @Before
   public void setUp() {
@@ -25,18 +26,16 @@ public class PastMeetingTest {
     contacts = new HashSet<Contact>();
     contacts.add(new MockContactImpl());
     contacts.add(new MockContactImpl());
+    pastMeeting = new MeetingImpl(pastDate, contacts);
   }
   
   @Test
   public void testGetNotesNone() {
-    PastMeeting pastMeeting = new MeetingImpl(pastDate, contacts);
-    
     assertEquals("", pastMeeting.getNotes());
   }
   
   @Test
   public void testAddNotesSingle() {
-    PastMeeting pastMeeting = new MeetingImpl(pastDate, contacts);
     pastMeeting.addNotes("Notes 1");
     
     assertTrue(pastMeeting.getNotes().contains("Notes 1"));
@@ -44,7 +43,6 @@ public class PastMeetingTest {
   
   @Test
   public void testAddNotesMultiple() {
-    PastMeeting pastMeeting = new MeetingImpl(pastDate, contacts);
     pastMeeting.addNotes("Notes 1");
     pastMeeting.addNotes("Notes 2");
     

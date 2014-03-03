@@ -45,7 +45,7 @@ public class MeetingTest {
   }
   
   @Test
-  public void testuniqueIds() {
+  public void testUniqueIds() {
     Meeting meetingOne = new MeetingImpl(nowDate, contacts);
     Meeting meetingTwo = new MeetingImpl(nowDate, contacts);
     
