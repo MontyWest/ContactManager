@@ -1,12 +1,16 @@
 package test;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import impl.ContactImpl;
 import impl.ContactManagerImpl;
 import interfaces.Contact;
 import interfaces.ContactManager;
+import interfaces.FutureMeeting;
 import interfaces.Meeting;
 import interfaces.PastMeeting;
 
@@ -333,4 +337,278 @@ public class ContactManagerTest {
     assertEquals(twoYearAgoDate, returnedMeetings.get(1).getDate());
     assertEquals(threeYearAgoDate, returnedMeetings.get(2).getDate());    
   }
+  
+  // ### General Meeting Return
+  
+  @Test
+  public void testGetFutureMeetingListByDateReturnsFutureMeetings() {
+    contactManager.addNewContact("mike", "notes");
+    Set<Contact> mikeSet = contactManager.getContacts("mike");
+    Iterator<Contact> it = mikeSet.iterator();
+    Contact mike = it.next();
+    
+    contactManager.addNewPastMeeting(mikeSet, pastDate, "past1");
+    contactManager.addNewPastMeeting(mikeSet, pastDate, "past2");
+    contactManager.addNewPastMeeting(mikeSet, pastDate, "past3");
+    contactManager.addFutureMeeting(mikeSet, futureDate);
+    contactManager.addFutureMeeting(mikeSet, futureDate);
+    contactManager.addFutureMeeting(mikeSet, futureDate);
+    
+    List<Meeting> futureMeetings = contactManager.getFutureMeetingList(mike);
+    List<Meeting> returnedFutureMeetings = contactManager.getFutureMeetingList(futureDate);
+    
+    assertEquals(3, returnedFutureMeetings.size());
+    assertTrue(returnedFutureMeetings.contains(futureMeetings.get(0)));
+    assertTrue(returnedFutureMeetings.contains(futureMeetings.get(1)));
+    assertTrue(returnedFutureMeetings.contains(futureMeetings.get(2)));
+  }
+  
+  @Test
+  public void testGetFutureMeetingListByDateReturnsPastMeetings() {
+    contactManager.addNewContact("mike", "notes");
+    Set<Contact> mikeSet = contactManager.getContacts("mike");
+    Iterator<Contact> it = mikeSet.iterator();
+    Contact mike = it.next();
+    
+    contactManager.addNewPastMeeting(mikeSet, pastDate, "past1");
+    contactManager.addNewPastMeeting(mikeSet, pastDate, "past2");
+    contactManager.addNewPastMeeting(mikeSet, pastDate, "past3");
+    contactManager.addFutureMeeting(mikeSet, futureDate);
+    contactManager.addFutureMeeting(mikeSet, futureDate);
+    contactManager.addFutureMeeting(mikeSet, futureDate);
+    
+    List<PastMeeting> pastMeetings = contactManager.getPastMeetingList(mike);
+    List<Meeting> returnedPastMeetings = contactManager.getFutureMeetingList(pastDate);
+    
+    assertEquals(3, returnedPastMeetings.size());
+    assertTrue(returnedPastMeetings.contains((Meeting)pastMeetings.get(0)));
+    assertTrue(returnedPastMeetings.contains((Meeting)pastMeetings.get(1)));
+    assertTrue(returnedPastMeetings.contains((Meeting)pastMeetings.get(2)));
+  }
+  
+  // ### Get Meeting by Id ###
+  
+  @Test
+  public void testGetPastMeetingByIdReturnsNullIfNone() {
+    PastMeeting returnedMeeting = contactManager.getPastMeeting(100);
+    
+    assertThat(returnedMeeting, is(nullValue()));
+  }
+  
+  @Test
+  public void testGetPastMeetingByIdThrowsException() {
+    contactManager.addNewContact("mike", "notes");
+    Set<Contact> mikeSet = contactManager.getContacts("mike");
+    int futureMeetingId = contactManager.addFutureMeeting(mikeSet, futureDate);
+    
+    try {
+      contactManager.getPastMeeting(futureMeetingId);
+      fail();
+    } catch (IllegalArgumentException e) {
+      
+    }
+  }
+  
+  @Test
+  public void testGetPastMeetingByIdReturn() {
+    contactManager.addNewContact("mike", "notes");
+    Set<Contact> mikeSet = contactManager.getContacts("mike");
+    Iterator<Contact> it = mikeSet.iterator();
+    Contact mike = it.next();
+    
+    contactManager.addNewPastMeeting(mikeSet, pastDate, "notes");
+    
+    List<PastMeeting> pastMeetingList = contactManager.getPastMeetingList(mike);
+    PastMeeting pastMeeting = pastMeetingList.get(0);
+    int pastMeetingId = pastMeeting.getId();
+    
+    PastMeeting returnedMeeting = contactManager.getPastMeeting(pastMeetingId);
+    
+    assertEquals(returnedMeeting, pastMeeting);
+  }
+  
+  @Test
+  public void testGetFutureMeetingByIdReturnsNullIfNone() {
+    FutureMeeting returnedMeeting = contactManager.getFutureMeeting(100);
+    
+    assertThat(returnedMeeting, is(nullValue()));
+  }
+  
+  @Test
+  public void testGetFutureMeetingByIdThrowsException() {
+    contactManager.addNewContact("mike", "notes");
+    Set<Contact> mikeSet = contactManager.getContacts("mike");
+    Iterator<Contact> it = mikeSet.iterator();
+    Contact mike = it.next();
+    
+    contactManager.addNewPastMeeting(mikeSet, pastDate, "notes");
+    
+    List<PastMeeting> pastMeetingList = contactManager.getPastMeetingList(mike);
+    int pastMeetingId = pastMeetingList.get(0).getId();
+    
+    try {
+      contactManager.getPastMeeting(pastMeetingId);
+      fail();
+    } catch (IllegalArgumentException e) {
+      
+    }
+  }
+  
+  @Test
+  public void testGetFutureMeetingByIdReturn() {
+    contactManager.addNewContact("mike", "notes");
+    Set<Contact> mikeSet = contactManager.getContacts("mike");
+    Iterator<Contact> it = mikeSet.iterator();
+    Contact mike = it.next();
+    
+    int futureMeetingId = contactManager.addFutureMeeting(mikeSet, futureDate);
+    
+    List<Meeting> futureMeetingList = contactManager.getFutureMeetingList(mike);
+    FutureMeeting futureMeeting = (FutureMeeting) futureMeetingList.get(0);
+    
+    FutureMeeting returnedMeeting = contactManager.getFutureMeeting(futureMeetingId);
+    
+    assertEquals(returnedMeeting, futureMeeting);
+  }
+  
+  @Test
+  public void testGetMeetingByIdReturnsNullIfNone() {
+    Meeting returnedMeeting = contactManager.getMeeting(100);
+    
+    assertThat(returnedMeeting, is(nullValue()));
+  }
+  
+  @Test
+  public void testGetMeetingByIdReturnsPastMeeting() {
+    contactManager.addNewContact("mike", "notes");
+    Set<Contact> mikeSet = contactManager.getContacts("mike");
+    Iterator<Contact> it = mikeSet.iterator();
+    Contact mike = it.next();
+    
+    contactManager.addNewPastMeeting(mikeSet, pastDate, "notes");
+    contactManager.addFutureMeeting(mikeSet, futureDate);
+    
+    List<PastMeeting> pastMeetingList = contactManager.getPastMeetingList(mike);
+    Meeting pastMeeting = (Meeting) pastMeetingList.get(0);
+    int pastMeetingId = pastMeeting.getId();
+    
+    Meeting returnedMeeting = contactManager.getMeeting(pastMeetingId);
+    
+    assertEquals(returnedMeeting, pastMeeting);
+  }
+  
+  @Test
+  public void testGetMeetingByIdReturnsFutureMeeting() {
+    contactManager.addNewContact("mike", "notes");
+    Set<Contact> mikeSet = contactManager.getContacts("mike");
+    Iterator<Contact> it = mikeSet.iterator();
+    Contact mike = it.next();
+    
+    int futureMeetingId = contactManager.addFutureMeeting(mikeSet, futureDate);
+    contactManager.addNewPastMeeting(mikeSet, pastDate, "notes");
+    
+    List<Meeting> futureMeetingList = contactManager.getFutureMeetingList(mike);
+    Meeting futureMeeting = futureMeetingList.get(0);
+    
+    FutureMeeting returnedMeeting = contactManager.getFutureMeeting(futureMeetingId);
+    
+    assertEquals(returnedMeeting, futureMeeting);
+  }
+  
+  // ### add Notes ###
+  
+  @Test
+  public void testAddMeetingNotesThrowsNullPointerException() {
+    contactManager.addNewContact("mike", "notes");
+    Set<Contact> mikeSet = contactManager.getContacts("mike");
+    Iterator<Contact> it = mikeSet.iterator();
+    Contact mike = it.next();
+    
+    contactManager.addNewPastMeeting(mikeSet, pastDate, "notes");
+    List<PastMeeting> pastMeetingList = contactManager.getPastMeetingList(mike);
+    int pastMeetingId = pastMeetingList.get(0).getId();
+    
+    try {
+      contactManager.addMeetingNotes(pastMeetingId, null);
+      fail();
+    } catch (NullPointerException e) {
+      
+    }
+  }
+  
+  @Test
+  public void testAddMeetingNotesThrowsIllegalStateException() {
+    contactManager.addNewContact("mike", "notes");
+    Set<Contact> mikeSet = contactManager.getContacts("mike");
+    
+    int futureMeetingId = contactManager.addFutureMeeting(mikeSet, futureDate);
+    
+    try {
+      contactManager.addMeetingNotes(futureMeetingId, "notes");
+      fail();
+    } catch (IllegalStateException e) {
+      
+    }
+  }
+  
+  @Test
+  public void testAddMeetingNotesThrowsIllegalArgumentException() {
+    try {
+      contactManager.addMeetingNotes(100, "notes");
+      fail();
+    } catch (IllegalArgumentException e) {
+      
+    }
+  }
+  
+  @Test
+  public void testAddMeetingNotesAddNotesToPastMeeting() {
+    contactManager.addNewContact("mike", "notes");
+    Set<Contact> mikeSet = contactManager.getContacts("mike");
+    Iterator<Contact> it = mikeSet.iterator();
+    Contact mike = it.next();
+    
+    contactManager.addNewPastMeeting(mikeSet, pastDate, "Notes 1");
+    List<PastMeeting> pastMeetingList = contactManager.getPastMeetingList(mike);
+    int pastMeetingId = pastMeetingList.get(0).getId();
+    
+    contactManager.addMeetingNotes(pastMeetingId, "Notes 2");
+    
+    PastMeeting pastMeeting = contactManager.getPastMeeting(pastMeetingId);
+    
+    assertTrue(pastMeeting.getNotes().contains("Notes 1"));
+    assertTrue(pastMeeting.getNotes().contains("Notes 2"));
+  }
+  
+  @Test
+  public void testAddMeetingNotesConvertsFutureMeetingToPastMeetingAndAddsNotes() {
+    contactManager.addNewContact("mike", "notes");
+    Set<Contact> mikeSet = contactManager.getContacts("mike");
+
+    Calendar halfSecondAwayDate = Calendar.getInstance();
+    halfSecondAwayDate.add(Calendar.MILLISECOND, 500);
+    
+    try {
+      int convertMeetingId = contactManager.addFutureMeeting(mikeSet, halfSecondAwayDate);
+      try {
+        Thread.sleep(600);
+      } catch (InterruptedException e) {
+        fail("600ms sleep interupted");
+      }
+      try {
+        contactManager.addMeetingNotes(convertMeetingId, "Convert Meeting Notes");
+      } catch (IllegalStateException e) {
+        fail("addMeetingNotes() asserts that meeting is in the future, even though date is the past.");
+      }
+      try {
+        PastMeeting pastMeeting = contactManager.getPastMeeting(convertMeetingId);
+        assertTrue(pastMeeting.getNotes().contains("Convert Meeting Notes"));
+      } catch (IllegalArgumentException e) {
+        fail("Couldn't find converted meeting as past meeting, meeting not converted.");
+      }
+    } catch (IllegalArgumentException e) {
+      fail("addFutureMeeting() took longer than 500ms to be called, hence meeting was in the 'past'.");
+    }
+  }
+  
 }
