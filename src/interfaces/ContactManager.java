@@ -113,7 +113,7 @@ public interface ContactManager {
    *           if any of the arguments is null
    */
   void addNewPastMeeting(Set<Contact> contacts, Calendar date, String text);
-
+  
   /**
    * Add notes to a meeting.
    * 

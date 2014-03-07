@@ -1,7 +1,12 @@
 package test;
 
-import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import impl.ContactImpl;
 import impl.ContactManagerImpl;
 import interfaces.Contact;
@@ -10,10 +15,11 @@ import interfaces.FutureMeeting;
 import interfaces.Meeting;
 import interfaces.PastMeeting;
 
-import java.beans.XMLDecoder;
 import java.io.BufferedInputStream;
+import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.util.Calendar;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -21,17 +27,21 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 /***
  * Order of tests is to ensure we never use a method's functionality
- * that hasn't been previously tested.
+ * that hasn't been previously tested. This is purely for readability
+ * as tests as carried out in a 'random' order.
  * 
  * @author montywest
  *
  */
 public class ContactManagerTest {
+  
+  private static final String FILENAME = "test.txt";
   
   ContactManager contactManager;
   Calendar nowDate;
@@ -41,12 +51,18 @@ public class ContactManagerTest {
   
   @Before
   public void setUp() {
-    contactManager = new ContactManagerImpl();
+    contactManager = new ContactManagerImpl(FILENAME);
     nowDate = Calendar.getInstance();
     pastDate = Calendar.getInstance();
     pastDate.add(Calendar.YEAR, -1);
     futureDate = Calendar.getInstance();
     futureDate.add(Calendar.YEAR, 1);
+  }
+  
+  @After
+  public void cleanUp() {
+    File file = new File(FILENAME);
+    file.delete();
   }
   
   @Test
@@ -612,33 +628,63 @@ public class ContactManagerTest {
     }
   }
   
+  @Test
+  public void testFlush() {
+    contactManager.addNewContact("mike", "mike notes");
+    contactManager.addNewContact("sue", "sue notes");
+    Set<Contact> contactsSet = contactManager.getContacts("");
+    
+    contactManager.addFutureMeeting(contactsSet, futureDate);
+    
+    contactManager.flush();
+  }
+  
   /**
-   * Test assumes flush() uses xml serialization, to a file called contacts.txt.
+   * Test assumes flush() uses java serialization, to a file called contacts.txt.
    */
   @Test
   public void testFlushSavesContacts() {
     contactManager.addNewContact("mike", "mike notes");
     contactManager.addNewContact("sue", "sue notes");
-    Set<Contact> contactsSet = contactManager.getContacts("");
+    Contact mike = contactManager.getContacts("mike").iterator().next();
+    Contact sue = contactManager.getContacts("sue").iterator().next();
 
     contactManager.flush();
     
-    XMLDecoder d = null;
+    ObjectInputStream d = null;
     try {
-        d = new XMLDecoder(
+        d = new ObjectInputStream(
                 new BufferedInputStream(
-                        new FileInputStream("contacts.txt")));
-    } catch (FileNotFoundException e) {
+                        new FileInputStream(FILENAME)));
+    } catch (IOException e) {
         e.printStackTrace();
     }
-    ContactManager deserializedContactManager = (ContactManager) d.readObject();
-    d.close();
+    ContactManager deserializedContactManager  = null;
+    try {
+        deserializedContactManager = (ContactManager) d.readObject();
+    } catch (IOException e) {
+        e.printStackTrace();
+    } catch (ClassNotFoundException e) {
+        e.printStackTrace();
+    }
+
+    try {
+        d.close();
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
     
-    assertEquals(contactsSet, deserializedContactManager.getContacts(""));
+    Contact deserializedMike = deserializedContactManager.getContacts("mike").iterator().next();
+    Contact deserializedSue = deserializedContactManager.getContacts("sue").iterator().next();
+
+    assertEquals(mike.getId(), deserializedMike.getId());
+    assertEquals(mike.getNotes(), deserializedMike.getNotes());
+    assertEquals(sue.getId(), deserializedSue.getId());
+    assertEquals(sue.getNotes(), deserializedSue.getNotes());
   }
   
   /**
-   * Test assumes flush() uses xml serialization, to a file called contacts.txt.
+   * Test assumes flush() uses java serialization, to a file called contacts.txt.
    */
   @Test
   public void testFlushSavesPastMeetings() {
@@ -658,19 +704,34 @@ public class ContactManagerTest {
     
     contactManager.flush();
     
-    XMLDecoder d = null;
+    ObjectInputStream d = null;
     try {
-        d = new XMLDecoder(
+        d = new ObjectInputStream(
                 new BufferedInputStream(
-                        new FileInputStream("contacts.txt")));
-    } catch (FileNotFoundException e) {
+                        new FileInputStream(FILENAME)));
+    } catch (IOException e) {
         e.printStackTrace();
     }
-    ContactManager deserializedContactManager = (ContactManager) d.readObject();
-    d.close();
+    ContactManager deserializedContactManager  = null;
+    try {
+        deserializedContactManager = (ContactManager) d.readObject();
+    } catch (IOException e) {
+        e.printStackTrace();
+    } catch (ClassNotFoundException e) {
+        e.printStackTrace();
+    }
+
+    try {
+        d.close();
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
     
-    List<PastMeeting> mikePastMeetingList = deserializedContactManager.getPastMeetingList(mike);
-    List<PastMeeting> suePastMeetingList = deserializedContactManager.getPastMeetingList(sue);
+    Contact deserializedMike = deserializedContactManager.getContacts("mike").iterator().next();
+    Contact deserializedSue = deserializedContactManager.getContacts("sue").iterator().next();
+
+    List<PastMeeting> mikePastMeetingList = deserializedContactManager.getPastMeetingList(deserializedMike);
+    List<PastMeeting> suePastMeetingList = deserializedContactManager.getPastMeetingList(deserializedSue);
     
     assertEquals(1, mikePastMeetingList.size());
     assertEquals(pastDate, mikePastMeetingList.get(0).getDate());
@@ -684,52 +745,113 @@ public class ContactManagerTest {
   }
   
   /**
-   * Test assumes flush() uses xml serialization, to a file called contacts.txt.
+   * Test assumes flush() uses java serialization, to a file called contacts.txt.
    */
   @Test
   public void testFlushSavesFutureMeetings() {
     contactManager.addNewContact("mike", "mike notes");
     contactManager.addNewContact("sue", "sue notes");
     Set<Contact> mikeSet = contactManager.getContacts("mike");
-    Iterator<Contact> itMike = mikeSet.iterator();
-    Contact mike = itMike.next();
     Set<Contact> sueSet = contactManager.getContacts("sue");
-    Iterator<Contact> itSue = sueSet.iterator();
-    Contact sue = itSue.next();
     
     int mikeMeetingId = contactManager.addFutureMeeting(mikeSet, futureDate);
     int sueMeetingId = contactManager.addFutureMeeting(sueSet, futureDate);
     
     contactManager.flush();
     
-    XMLDecoder d = null;
+    ObjectInputStream d = null;
     try {
-        d = new XMLDecoder(
+        d = new ObjectInputStream(
                 new BufferedInputStream(
-                        new FileInputStream("contacts.txt")));
-    } catch (FileNotFoundException e) {
+                        new FileInputStream(FILENAME)));
+    } catch (IOException e) {
         e.printStackTrace();
     }
-    ContactManager deserializedContactManager = (ContactManager) d.readObject();
-    d.close();
+    ContactManager deserializedContactManager  = null;
+    try {
+        deserializedContactManager = (ContactManager) d.readObject();
+    } catch (IOException e) {
+        e.printStackTrace();
+    } catch (ClassNotFoundException e) {
+        e.printStackTrace();
+    }
+
+    try {
+        d.close();
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
     
-    List<Meeting> mikePastMeetingList = deserializedContactManager.getFutureMeetingList(mike);
-    List<Meeting> suePastMeetingList = deserializedContactManager.getFutureMeetingList(sue);
+    Contact deserializedMike = deserializedContactManager.getContacts("mike").iterator().next();
+    Contact deserializedSue = deserializedContactManager.getContacts("sue").iterator().next();
+    
+    List<Meeting> mikePastMeetingList = deserializedContactManager.getFutureMeetingList(deserializedMike);
+    List<Meeting> suePastMeetingList = deserializedContactManager.getFutureMeetingList(deserializedSue);
     
     assertEquals(1, mikePastMeetingList.size());
-    assertEquals(pastDate, mikePastMeetingList.get(0).getDate());
+    assertEquals(futureDate, mikePastMeetingList.get(0).getDate());
     assertEquals(mikeMeetingId, mikePastMeetingList.get(0).getId());
     
     assertEquals(1, suePastMeetingList.size());
-    assertEquals(pastDate, suePastMeetingList.get(0).getDate());
+    assertEquals(futureDate, suePastMeetingList.get(0).getDate());
     assertEquals(sueMeetingId, suePastMeetingList.get(0).getId());
   }
   
   /**
-   * Test assumes flush() uses xml serialization, to a file called contacts.txt.
+   * Test assumes flush() uses java serialization, to a file called contacts.txt.
    */
   @Test
-  public void testFlushPreservesUniqueIdGeneration() {
+  public void testFlushPreservesUniqueContactIdGeneration() {
+    
+    //TODO: separate runtimes into threads? ATM static fields aren't reset, so test isn't complete.
+    
+    contactManager.addNewContact("mike", "mike notes");
+    contactManager.addNewContact("sue", "sue notes");
+    contactManager.addNewContact("kevin", "kevin notes");
+    List<Integer> preFlushIds = new LinkedList<Integer>();
+    preFlushIds.add(contactManager.getContacts("mike").iterator().next().getId());
+    preFlushIds.add(contactManager.getContacts("sue").iterator().next().getId());
+    preFlushIds.add(contactManager.getContacts("kevin").iterator().next().getId());
+
+    contactManager.flush();
+    
+    ObjectInputStream d = null;
+    try {
+        d = new ObjectInputStream(
+                new BufferedInputStream(
+                        new FileInputStream(FILENAME)));
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
+    ContactManager deserializedContactManager  = null;
+    try {
+        deserializedContactManager = (ContactManager) d.readObject();
+    } catch (IOException e) {
+        e.printStackTrace();
+    } catch (ClassNotFoundException e) {
+        e.printStackTrace();
+    }
+
+    try {
+        d.close();
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
+    
+    deserializedContactManager.addNewContact("molly", "molly notes");
+    int postFlushId = deserializedContactManager.getContacts("molly").iterator().next().getId();
+    
+    System.out.println("Contacts:");
+    System.out.println(preFlushIds);
+    System.out.println(postFlushId);
+    assertFalse(preFlushIds.contains(postFlushId));
+  }
+  
+  /**
+   * Test assumes flush() uses java serialization, to a file called contacts.txt.
+   */
+  @Test
+  public void testFlushPreservesUniqueMeetingIdGeneration() {
     
     //TODO: separate runtimes into threads? ATM static fields aren't reset, so test isn't complete.
     
@@ -742,19 +864,35 @@ public class ContactManagerTest {
 
     contactManager.flush();
     
-    XMLDecoder d = null;
+    ObjectInputStream d = null;
     try {
-        d = new XMLDecoder(
+        d = new ObjectInputStream(
                 new BufferedInputStream(
-                        new FileInputStream("contacts.txt")));
-    } catch (FileNotFoundException e) {
+                        new FileInputStream(FILENAME)));
+    } catch (IOException e) {
         e.printStackTrace();
     }
-    ContactManager deserializedContactManager = (ContactManager) d.readObject();
-    d.close();
+    ContactManager deserializedContactManager  = null;
+    try {
+        deserializedContactManager = (ContactManager) d.readObject();
+    } catch (IOException e) {
+        e.printStackTrace();
+    } catch (ClassNotFoundException e) {
+        e.printStackTrace();
+    }
+
+    try {
+        d.close();
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
     
-    int postFlushId = deserializedContactManager.addFutureMeeting(mikeSet, futureDate);
+    Set<Contact> deserializedMikeSet = deserializedContactManager.getContacts("mike");
+    int postFlushId = deserializedContactManager.addFutureMeeting(deserializedMikeSet, futureDate);
     
+    System.out.println("Meetings:");
+    System.out.println(preFlushIds);
+    System.out.println(postFlushId);
     assertFalse(preFlushIds.contains(postFlushId));
   }
 }

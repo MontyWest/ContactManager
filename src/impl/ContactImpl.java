@@ -2,12 +2,18 @@ package impl;
 
 import interfaces.Contact;
 
-public class ContactImpl extends DomainObject implements Contact {
+import java.io.Serializable;
+
+public class ContactImpl extends DomainObject implements Contact, Serializable {
 
   private static final long serialVersionUID = 2L;
   private final String name;
   private String notes = "";
 
+  public ContactImpl() {
+    name = null;
+  }
+  
   public ContactImpl(String name) {
     this.name = name;
   }
@@ -32,5 +38,19 @@ public class ContactImpl extends DomainObject implements Contact {
   @Override
   public String getName() {
     return name;
+  }
+  
+  @Override
+  public boolean equals(Object obj) {
+    if(!(obj instanceof ContactImpl)) {
+      return false;
+    }
+    ContactImpl contact = (ContactImpl) obj;
+    return this.getId() == contact.getId();
+  }
+  
+  @Override
+  public String toString() {
+    return "[Contact-> Id: " + getId() + ", Name: " + getName() + ", Notes: " + getNotes() + "]";
   }
 }

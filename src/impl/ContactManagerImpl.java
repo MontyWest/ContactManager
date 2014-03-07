@@ -6,10 +6,15 @@ import interfaces.FutureMeeting;
 import interfaces.Meeting;
 import interfaces.PastMeeting;
 
-import java.beans.XMLEncoder;
+import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.Calendar;
 import java.util.Collections;
@@ -27,6 +32,75 @@ public class ContactManagerImpl implements ContactManager, Serializable {
   private List<PastMeeting> pastMeetings = new LinkedList<PastMeeting>();
   private List<FutureMeeting> futureMeetings = new LinkedList<FutureMeeting>();
   private Set<Contact> contacts = new HashSet<Contact>();
+  private final String filename;
+  
+  public ContactManagerImpl(){
+    loadFromFile("contacts.txt");
+    this.filename = "contacts.txt";
+  }
+  
+  public ContactManagerImpl(String filename) {
+    loadFromFile(filename);
+    this.filename = filename;
+  }
+
+  private void loadFromFile(String filename) {
+    File file = new File(filename);
+    if(!file.isFile()) {
+      try {
+        file.createNewFile();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    } else {
+      
+      ObjectInputStream d = null;
+      try {
+          d = new ObjectInputStream(
+                  new BufferedInputStream(
+                          new FileInputStream(filename)));
+      } catch (FileNotFoundException e) {
+          System.out.println("");
+          System.out.println("File not found");
+      } catch (IOException e) {
+          e.printStackTrace();
+      }
+      ContactManagerImpl deserializedContactManager  = null;
+      try {
+          deserializedContactManager = (ContactManagerImpl) d.readObject();
+      } catch (IOException e) {
+          e.printStackTrace();
+      } catch (ClassNotFoundException e) {
+          e.printStackTrace();
+      }
+      try {
+          d.close();
+      } catch (IOException e) {
+          e.printStackTrace();
+      }
+      // TODO Copy constructor
+      this.pastMeetings = deserializedContactManager.getPastMeetings();
+      this.futureMeetings = deserializedContactManager.getFutureMeetings();
+      this.contacts = deserializedContactManager.getContacts();
+    }
+  }
+  
+  public List<PastMeeting> getPastMeetings() {
+    return pastMeetings;
+  }
+
+  public List<FutureMeeting> getFutureMeetings() {
+    return futureMeetings;
+  }
+
+  public Set<Contact> getContacts() {
+    return contacts;
+  }
+
+  public String getFilename() {
+    return filename;
+  }
+  
 
   @Override
   public int addFutureMeeting(Set<Contact> contacts, Calendar date) {
@@ -243,55 +317,30 @@ public class ContactManagerImpl implements ContactManager, Serializable {
   
   @Override
   public void flush() {
-    final String FILENAME = "contacts.txt"; //in object?
-    
-    XMLEncoder encode = null;
+
+    ObjectOutputStream encode = null;
     try {
-        encode = new XMLEncoder(
+        encode = new ObjectOutputStream(
                 new BufferedOutputStream(
-                        new FileOutputStream(FILENAME)));
+                        new FileOutputStream(this.filename)));
     } catch (FileNotFoundException e) {
         System.err.println("encoding... " + e);
+    } catch (IOException e1) {
+        e1.printStackTrace();
     }
 
-    encode.writeObject(this);
-    encode.close();
-
+    try {
+        encode.writeObject(this);
+    } catch (IOException e2) {
+        e2.printStackTrace();
+    }
+    try {
+        encode.close();
+    } catch (IOException e3) {
+        e3.printStackTrace();
+    }
   }
   
-  /***
-   * If date is now then returns false.
-   * 
-   * @param date
-   * @return true if date is strictly in past
-   */
-  private boolean isInPast(Calendar date) {
-    return date.before(Calendar.getInstance());
-  }
-  
-  /***
-   * This ensures that if date is now (to the millisecond)
-   * is counted as a future date.
-   * 
-   * @param date
-   * @return true if date is now or in future
-   */
-  private boolean isInFuture(Calendar date) {
-    return !isInPast(date);
-  }
-  
-  /***
-   * 
-   * @param d1 (Calendar)
-   * @param d2 (Calendar)
-   * @return true if d1 and d2 are on the same day
-   */
-  private boolean areSameDay(Calendar d1, Calendar d2) {
-    boolean sameDay = d1.get(Calendar.DAY_OF_MONTH) == d2.get(Calendar.DAY_OF_MONTH);
-    boolean sameMonth = d1.get(Calendar.MONTH) == d2.get(Calendar.MONTH);
-    boolean sameYear = d1.get(Calendar.YEAR) == d2.get(Calendar.YEAR);
-    return sameDay && sameMonth && sameYear;
-  }
   
   /***
    * 
@@ -316,7 +365,7 @@ public class ContactManagerImpl implements ContactManager, Serializable {
    * Regardless of date.
    * 
    * @param meeting
-   * @return true is meeting is in futureMeetings list
+   * @return true if meeting is in futureMeetings list
    */
   private boolean isFutureMeeting(Meeting meeting) {
     return futureMeetings.contains((FutureMeeting) meeting);
@@ -326,7 +375,7 @@ public class ContactManagerImpl implements ContactManager, Serializable {
    * Regardless of date.
    * 
    * @param meeting
-   * @return true is meeting is in pastMeetings list
+   * @return true if meeting is in pastMeetings list
    */
   private boolean isPastMeeting(Meeting meeting) {
     return pastMeetings.contains((PastMeeting) meeting);
@@ -339,7 +388,7 @@ public class ContactManagerImpl implements ContactManager, Serializable {
    * 
    * @param meetingList
    */
-  private <T extends Meeting> void sortMeetingsByDate(List<T> meetingList) {
+  private static <T extends Meeting> void sortMeetingsByDate(List<T> meetingList) {
     Collections.sort(meetingList, new Comparator<T>() {
       
       public int compare(T m1, T m2) {
@@ -347,5 +396,40 @@ public class ContactManagerImpl implements ContactManager, Serializable {
       }
     });
   }
+  
+  /***
+   * If date is now then returns false.
+   * 
+   * @param date
+   * @return true if date is strictly in past
+   */
+  private static boolean isInPast(Calendar date) {
+    return date.before(Calendar.getInstance());
+  }
+  
+  /***
+   * This ensures that if date is now (to the millisecond)
+   * is counted as a future date.
+   * 
+   * @param date
+   * @return true if date is now or in future
+   */
+  private static boolean isInFuture(Calendar date) {
+    return !isInPast(date);
+  }
+  
+  /***
+   * 
+   * @param d1 (Calendar)
+   * @param d2 (Calendar)
+   * @return true if d1 and d2 are on the same day
+   */
+  private static boolean areSameDay(Calendar d1, Calendar d2) {
+    boolean sameDay = d1.get(Calendar.DAY_OF_MONTH) == d2.get(Calendar.DAY_OF_MONTH);
+    boolean sameMonth = d1.get(Calendar.MONTH) == d2.get(Calendar.MONTH);
+    boolean sameYear = d1.get(Calendar.YEAR) == d2.get(Calendar.YEAR);
+    return sameDay && sameMonth && sameYear;
+  }
+  
   
 }

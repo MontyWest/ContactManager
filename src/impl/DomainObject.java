@@ -4,7 +4,7 @@ import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public abstract class DomainObject implements Serializable{
+public abstract class DomainObject implements Serializable {
 
   private static final long serialVersionUID = 1L;
   private static AtomicInteger idBank = new AtomicInteger();
