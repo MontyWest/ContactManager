@@ -51,7 +51,7 @@ public class ContactManagerImpl implements ContactManager, Serializable {
       try {
         file.createNewFile();
         System.out.println("");
-        System.out.print("New file " + filename + "created.");
+        System.out.print("New file " + filename + " created.");
       } catch (IOException e) {
         e.printStackTrace();
       }
@@ -89,6 +89,7 @@ public class ContactManagerImpl implements ContactManager, Serializable {
           this.pastMeetings = deserializedContactManager.getPastMeetings();
           this.futureMeetings = deserializedContactManager.getFutureMeetings();
           this.contacts = deserializedContactManager.getContacts();
+          System.out.println("File " + filename + " loaded.");
           return;
         }
       }
@@ -151,19 +152,15 @@ public class ContactManagerImpl implements ContactManager, Serializable {
   
   @Override
   public Meeting getMeeting(int id) {
-    Iterator<PastMeeting> pastIt = pastMeetings.iterator();
-    while (pastIt.hasNext()) {
-      PastMeeting candidate = pastIt.next();
-      if(candidate.getId() == id) {
-        return (Meeting) candidate;
+    for (PastMeeting pm : pastMeetings) {
+      if(pm.getId() == id) {
+        return (Meeting) pm;
       }
     }
     
-    Iterator<FutureMeeting> futureIt = futureMeetings.iterator();
-    while (futureIt.hasNext()) {
-      FutureMeeting candidate = futureIt.next();
-      if(candidate.getId() == id) {
-        return (Meeting) candidate;
+    for (FutureMeeting fm : futureMeetings) {
+      if(fm.getId() == id) {
+        return (Meeting) fm;
       }
     }
     
@@ -177,12 +174,10 @@ public class ContactManagerImpl implements ContactManager, Serializable {
     }
     
     List<Meeting> returnList = new LinkedList<Meeting>();
-    Iterator<FutureMeeting> futureIt = futureMeetings.iterator();
-    while (futureIt.hasNext()) {
-      FutureMeeting candidate = futureIt.next();
-      Set<Contact> candidateContacts = candidate.getContacts();
+    for (FutureMeeting fm : futureMeetings) {
+      Set<Contact> candidateContacts = fm.getContacts();
       if (candidateContacts.contains(contact)) {
-        returnList.add((Meeting) candidate);
+        returnList.add((Meeting) fm);
       }
     }
     
@@ -192,10 +187,9 @@ public class ContactManagerImpl implements ContactManager, Serializable {
   }
   
   /***
-   * As all pastMeetings are definitely in the past, if date param
-   * is in future there's no need to search through pastMeetings.
-   * However as time moves forward, futureMeetings may have Meetings
-   * with a date in the past, hence the need to always search futureMeetings
+   * Must iterate through both lists as although all past meetings
+   * are in the past, if todays date is entered we may need to pull
+   * from both lists.
    * 
    * @param date 
    * @returns list of meeting on same day as date
@@ -205,21 +199,15 @@ public class ContactManagerImpl implements ContactManager, Serializable {
     
     List<Meeting> returnList = new LinkedList<Meeting>();
     
-    if (isInPast(date)) {
-      Iterator<PastMeeting> pastIt = pastMeetings.iterator();
-      while (pastIt.hasNext()) {
-        PastMeeting candidate = pastIt.next();
-        if(areSameDay(date, candidate.getDate())) {
-          returnList.add((Meeting) candidate);
-        }
+    for (PastMeeting pm : pastMeetings) {
+      if(areSameDay(date, pm.getDate())) {
+        returnList.add((Meeting) pm);
       }
     }
     
-    Iterator<FutureMeeting> futureIt = futureMeetings.iterator();
-    while (futureIt.hasNext()) {
-      FutureMeeting candidate = futureIt.next();
-      if(areSameDay(date, candidate.getDate())) {
-        returnList.add((Meeting) candidate);
+    for (FutureMeeting fm : futureMeetings) {
+      if(areSameDay(date, fm.getDate())) {
+        returnList.add((Meeting) fm);
       }
     }
     
@@ -235,12 +223,10 @@ public class ContactManagerImpl implements ContactManager, Serializable {
     }
     
     List<PastMeeting> returnList = new LinkedList<PastMeeting>();
-    Iterator<PastMeeting> pastIt = pastMeetings.iterator();
-    while (pastIt.hasNext()) {
-      PastMeeting candidate = pastIt.next();
-      Set<Contact> candidateContacts = candidate.getContacts();
+    for (PastMeeting pm : pastMeetings) {
+      Set<Contact> candidateContacts = pm.getContacts();
       if (candidateContacts.contains(contact)) {
-        returnList.add(candidate);
+        returnList.add(pm);
       }
     }
     
@@ -341,6 +327,7 @@ public class ContactManagerImpl implements ContactManager, Serializable {
     }
     try {
         encode.writeObject(this);
+        System.out.println("Saved.");
     } catch (IOException e2) {
         e2.printStackTrace();
     }
@@ -353,7 +340,7 @@ public class ContactManagerImpl implements ContactManager, Serializable {
   
   @Override
   public String toString() {
-    String str = "Filename: " + filename + "\n" +  "\n### Contacts ###\n";
+    String str = "\nFilename: " + filename + "\n" +  "\n### Contacts ###\n";
     Iterator<Contact> contactIt = contacts.iterator();
     while (contactIt.hasNext()) {
       str += contactIt.next() + "\n";

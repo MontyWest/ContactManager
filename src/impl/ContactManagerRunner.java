@@ -326,6 +326,7 @@ public class ContactManagerRunner {
     if (!filename.equals("")) {
       File file = new File(filename);
       file.delete();
+      o.println("Deleted.");
     } else {
       o.println("ERROR: You cannot delete the default file.");
     }
@@ -348,12 +349,15 @@ public class ContactManagerRunner {
     SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy");
     String dateStr = "00-00-0000";
     Calendar date = Calendar.getInstance();
+    int hours = date.get(Calendar.HOUR_OF_DAY);
     while(dateStr.equals("00-00-0000")) {
         o.print("Enter date in format dd-mm-yyyy: ");
         dateStr = in.nextLine();
         try {
           date.setTime(sdf.parse(dateStr));
-          date.add(Calendar.MINUTE, 5);
+          date.add(Calendar.HOUR_OF_DAY, hours);
+          date.add(Calendar.MINUTE, 59);
+          //o.print(date);
         } catch (ParseException e) {
           o.println("Invalid Date.");
           dateStr = "00-00-0000";
