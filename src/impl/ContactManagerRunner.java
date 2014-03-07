@@ -45,7 +45,7 @@ public class ContactManagerRunner {
       + "5. View Future Meeting\n"
       + "6. View Meeting by Date\n"
       + "7. Add Notes to Meeting\n"
-      + "8. Save\n"
+      + "8. Save and Print\n"
       + "9. Save and Exit\n"
       + "0. Delete File and Exit\n";
     o.print(menu);
@@ -84,6 +84,7 @@ public class ContactManagerRunner {
       break;
     case 8:
       save();
+      print();
       break;
     case 9:
       save();
@@ -316,7 +317,12 @@ public class ContactManagerRunner {
     o.println("");
   }
   
+  private static void print() {
+    o.println(cm);
+  }
+  
   private static void deleteFile() {
+    o.println("Deleting " + filename + "...");
     if (!filename.equals("")) {
       File file = new File(filename);
       file.delete();

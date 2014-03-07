@@ -16,10 +16,14 @@ import interfaces.Meeting;
 import interfaces.PastMeeting;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.Calendar;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -61,6 +65,7 @@ public class ContactManagerTest {
   
   @After
   public void cleanUp() {
+    System.out.println(contactManager);
     File file = new File(FILENAME);
     file.delete();
   }
@@ -841,9 +846,6 @@ public class ContactManagerTest {
     deserializedContactManager.addNewContact("molly", "molly notes");
     int postFlushId = deserializedContactManager.getContacts("molly").iterator().next().getId();
     
-    System.out.println("Contacts:");
-    System.out.println(preFlushIds);
-    System.out.println(postFlushId);
     assertFalse(preFlushIds.contains(postFlushId));
   }
   
@@ -852,9 +854,7 @@ public class ContactManagerTest {
    */
   @Test
   public void testFlushPreservesUniqueMeetingIdGeneration() {
-    
-    //TODO: separate runtimes into threads? ATM static fields aren't reset, so test isn't complete.
-    
+        
     contactManager.addNewContact("mike", "mike notes");
     Set<Contact> mikeSet = contactManager.getContacts("mike");
     List<Integer> preFlushIds = new LinkedList<Integer>();
@@ -890,9 +890,51 @@ public class ContactManagerTest {
     Set<Contact> deserializedMikeSet = deserializedContactManager.getContacts("mike");
     int postFlushId = deserializedContactManager.addFutureMeeting(deserializedMikeSet, futureDate);
     
-    System.out.println("Meetings:");
-    System.out.println(preFlushIds);
-    System.out.println(postFlushId);
     assertFalse(preFlushIds.contains(postFlushId));
+  }
+  
+  @Test
+  public void testConstructorCreatesFileIfNotPresent() {
+    
+  }
+  
+  @Test
+  public void testConstructorLoadsFromFile() {
+    contactManager.addNewContact("mike", "mike notes");
+    contactManager.addNewContact("sue", "sue notes");
+    contactManager.addNewContact("kevin", "kevin notes");
+    Contact kevin = contactManager.getContacts("kevin").iterator().next();
+    
+    ObjectOutputStream encode = null;
+    try {
+        encode = new ObjectOutputStream(
+                new BufferedOutputStream(
+                        new FileOutputStream("specific_test.txt")));
+    } catch (FileNotFoundException e) {
+        System.err.println("encoding... " + e);
+    } catch (IOException e1) {
+        e1.printStackTrace();
+    }
+
+    try {
+        encode.writeObject(contactManager);
+    } catch (IOException e2) {
+        e2.printStackTrace();
+    }
+    try {
+        encode.close();
+    } catch (IOException e3) {
+        e3.printStackTrace();
+    }
+    
+    ContactManager reconstructedCM = new ContactManagerImpl("specific_test.txt");
+    
+    assertEquals(3, reconstructedCM.getContacts("").size());
+    assertEquals(1, reconstructedCM.getContacts("kevin").size());
+    Contact reconstructedKevin = reconstructedCM.getContacts("kevin").iterator().next();
+    assertEquals(reconstructedKevin.getId(), kevin.getId());
+    assertEquals(reconstructedKevin.getName(), kevin.getName());
+    assertEquals(reconstructedKevin.getNotes(), kevin.getNotes());
+    (new File("specific_test.txt")).delete();
   }
 }

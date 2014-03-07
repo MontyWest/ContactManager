@@ -8,6 +8,7 @@ import interfaces.PastMeeting;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -49,6 +50,8 @@ public class ContactManagerImpl implements ContactManager, Serializable {
     if(!file.isFile()) {
       try {
         file.createNewFile();
+        System.out.println("");
+        System.out.print("New file " + filename + "created.");
       } catch (IOException e) {
         e.printStackTrace();
       }
@@ -61,27 +64,35 @@ public class ContactManagerImpl implements ContactManager, Serializable {
                           new FileInputStream(filename)));
       } catch (FileNotFoundException e) {
           System.out.println("");
-          System.out.println("File not found");
+          System.out.print("File " + filename + " not found. ");
+      } catch (EOFException e) {
+          System.out.println("");
+          System.out.print("File " + filename + " empty or corrupt. ");
       } catch (IOException e) {
           e.printStackTrace();
       }
-      ContactManagerImpl deserializedContactManager  = null;
-      try {
-          deserializedContactManager = (ContactManagerImpl) d.readObject();
-      } catch (IOException e) {
-          e.printStackTrace();
-      } catch (ClassNotFoundException e) {
-          e.printStackTrace();
+      if(!(d == null)) {
+        ContactManagerImpl deserializedContactManager  = null;
+        try {
+            deserializedContactManager = (ContactManagerImpl) d.readObject();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        try {
+            d.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } 
+        if(!(deserializedContactManager == null)) {
+          this.pastMeetings = deserializedContactManager.getPastMeetings();
+          this.futureMeetings = deserializedContactManager.getFutureMeetings();
+          this.contacts = deserializedContactManager.getContacts();
+          return;
+        }
       }
-      try {
-          d.close();
-      } catch (IOException e) {
-          e.printStackTrace();
-      }
-      // TODO Copy constructor
-      this.pastMeetings = deserializedContactManager.getPastMeetings();
-      this.futureMeetings = deserializedContactManager.getFutureMeetings();
-      this.contacts = deserializedContactManager.getContacts();
+      System.out.println("Nothing loaded.");
     }
   }
   
@@ -328,7 +339,6 @@ public class ContactManagerImpl implements ContactManager, Serializable {
     } catch (IOException e1) {
         e1.printStackTrace();
     }
-
     try {
         encode.writeObject(this);
     } catch (IOException e2) {
@@ -339,6 +349,24 @@ public class ContactManagerImpl implements ContactManager, Serializable {
     } catch (IOException e3) {
         e3.printStackTrace();
     }
+  }
+  
+  @Override
+  public String toString() {
+    String str = "Filename: " + filename + "\n" +  "\n### Contacts ###\n";
+    Iterator<Contact> contactIt = contacts.iterator();
+    while (contactIt.hasNext()) {
+      str += contactIt.next() + "\n";
+    }
+    str += "\n### Past Meetings ###\n";
+    for (PastMeeting pm : pastMeetings) {
+      str += pm + "\n";
+    }
+    str += "\n### Future Meetings ###\n";
+    for (FutureMeeting pm : futureMeetings) {
+      str += pm + "\n";
+    }
+    return str;
   }
   
   
