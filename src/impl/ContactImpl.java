@@ -28,6 +28,10 @@ public class ContactImpl extends DomainObject implements Contact, Serializable {
     return notes;
   }
 
+  
+  /***
+   * @see "Adds a semicolon to separate new note from existing notes."
+   */
   @Override
   public void addNotes(String note) {
     if (!notes.equals(""))
@@ -40,6 +44,9 @@ public class ContactImpl extends DomainObject implements Contact, Serializable {
     return name;
   }
   
+  /****
+   * @see "Two contacts are equal if their id is equal."
+   */
   @Override
   public boolean equals(Object obj) {
     if(!(obj instanceof ContactImpl)) {

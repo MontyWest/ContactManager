@@ -44,6 +44,9 @@ public class MeetingImpl extends DomainObject implements Meeting, PastMeeting, F
     return notes;
   }
   
+  /***
+   * @see "Adds a semicolon to separate new note from existing notes."
+   */
   @Override
   public void addNotes(String note) {
     if (!notes.equals(""))
@@ -51,6 +54,9 @@ public class MeetingImpl extends DomainObject implements Meeting, PastMeeting, F
     notes += note;
   }
   
+  /***
+   * @see "Two Meetings are equal if they have the same id."
+   */
   @Override
   public boolean equals(Object obj) {
     if(!(obj instanceof MeetingImpl)) {
@@ -60,6 +66,9 @@ public class MeetingImpl extends DomainObject implements Meeting, PastMeeting, F
     return this.getId() == contact.getId();
   }
   
+  /***
+   * @see "Date is formated in dd-MM-yyyy."
+   */
   @Override
   public String toString() {
     String meetingNotesToStr = "";

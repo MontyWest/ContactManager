@@ -313,7 +313,6 @@ public class ContactManagerRunner {
     o.println("");
     o.println("Saving...");
     cm.flush();
-    o.println("Saved.");
     o.println("");
   }
   

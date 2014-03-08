@@ -18,8 +18,6 @@ public interface PastMeeting extends Meeting {
   /**
    * Add notes about the meeting.
    * 
-   * @author montywest
-   * 
    * @param note
    */
   void addNotes(String note);
